@@ -1,0 +1,12 @@
+pkgbase = otf-atkinson-hyperlegible-next-nerd-git
+	pkgdesc = Patched font Atkinson Hyperlegible Next (2024) from nerd fonts library. Packaged by Andrés Merlo Trujillo only for local use!
+	pkgver = 2.001
+	pkgrel = 1
+	arch = any
+	license = OFL-1.1
+	makedepends = font-patcher
+	noextract = otf-atkinson-hyperlegible-next-nerd-git
+	source = otf-atkinson-hyperlegible-next-nerd-git::git+https://github.com/googlefonts/atkinson-hyperlegible-next.git
+	sha256sums = SKIP
+
+pkgname = otf-atkinson-hyperlegible-next-nerd-git
