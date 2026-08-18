@@ -24,6 +24,22 @@ build() {
   mkdir output
 
   find fonts/ttf -iname "*.ttf" -print0 | xargs -I {} -0 -P $(nproc) fontforge -script /usr/share/font-patcher/font-patcher -q --outputdir "output/" --complete --careful --makegroups 5 --metrics TYPO "{}"
+
+  # Put the latin i back (Atkynson -> Atkinson): upstream's OFL copyright line
+  # declares NO Reserved Font Name, so a modified version may keep the name —
+  # the patcher's blanket rename (FontnameTools.py) is caution this font does
+  # not require.
+  fontforge -lang=py -c "
+import sys, fontforge
+for path in sys.argv[1:]:
+    f = fontforge.open(path)
+    fix = lambda s: s.replace('Atkynson', 'Atkinson') if s else s
+    f.fontname, f.familyname, f.fullname = fix(f.fontname), fix(f.familyname), fix(f.fullname)
+    f.sfnt_names = tuple((l, k, fix(v)) for l, k, v in f.sfnt_names)
+    f.generate(path)
+    f.close()
+" output/*.ttf
+  for f in output/*Atkynson*; do [ -e "$f" ] || continue; mv "$f" "${f//Atkynson/Atkinson}"; done
 }
 
 package() {
