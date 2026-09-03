@@ -94,6 +94,11 @@ fonts are valid, and the AUR metadata is consistent. Before considering a change
 must survive the patch, which families must install — and verify against that, rather than
 trusting that a green `makepkg` run implies a good font.
 
+- **Mutation gate (60%) — does not apply here, and that is why it is written down.** The template
+  requires a 60% mutation threshold over business logic; this repo packages font files and has no
+  executable logic of its own to mutate. The checks above are its equivalent. If a script with tests
+  ever lands here, the rule applies from that day.
+
 ## Working rules
 
 - **Use superpowers skills whenever they apply** — invoke via `Skill` before acting; process skills before implementation skills.
