@@ -99,6 +99,59 @@ trusting that a green `makepkg` run implies a good font.
   executable logic of its own to mutate. The checks above are its equivalent. If a script with tests
   ever lands here, the rule applies from that day.
 
+## Real-system verification — what no green build can prove
+
+The section above lists the right gates. This one names the **kinds** of check they are, so one can
+be asked for by name, and states the rules for writing one worth trusting.
+
+The framing that matters for a font package: **`fontlint` clean, `ttx` round-tripping and `fc-list`
+finding the family do not mean a single icon renders.** They are structural checks on a file. The
+product is glyphs on a screen. The failure mode this package exists to prevent — tofu where a
+Powerline arrow or a git-branch glyph should be — is *visual*, and no structural check reports it.
+
+What "real system" means here, concretely:
+
+- **A real display, at a real size.** Install, `fc-cache -f`, then open a terminal and an editor
+  configured with the patched family and look. Rasterisation depends on the FreeType version,
+  fontconfig rules, subpixel settings and DPI — a font that reads well on a 4K panel can be muddy at
+  1080p, and this is a *legibility* typeface, so that is the whole point.
+- **A clean chroot for the build**, not your dev box: `extra-x86_64-build` or `makechrootpkg`. A
+  build that works only because `font-patcher` or FontForge happens to be installed globally is a
+  missing `makedepends` that fails for everyone else — silently, for you.
+- **A throwaway system for the install.** `makepkg -si` installs fonts on your daily machine and
+  rewrites your fontconfig cache; a bad build there is a real problem, not a failed test.
+
+### The names, so you can ask for them by name
+
+| Name | What it means here |
+| --- | --- |
+| **E2E / on-system acceptance test** | Build in a clean chroot, install on a throwaway system, and assert on observable results — `pacman -Ql` lists the TTFs under `/usr/share/fonts/TTF` and the license under `/usr/share/licenses/`, `fc-list` reports the family, and **the icons actually render in a terminal**. Never on the build log. |
+| **Contract test** | Checks that assumptions about **things you do not control** still hold, which for a `-git` package is most of them. The `source` floats to upstream's default branch, so the input fonts change under you between builds. `font-patcher` is a `makedepends`, so its flag semantics move with the Nerd Fonts release — `--complete`, `--careful`, `--makegroups 5` and `--metrics TYPO` have each changed meaning or naming output across versions. FontForge's own version changes what comes out. Record which upstream commit and which patcher version produced a build, or a regression is unattributable. |
+| **Mutation testing** (here: by hand) | Drop a patcher flag or a `makedepends`, rebuild in the chroot, confirm the check you rely on goes red, restore. **A check that has never failed has not been tested** — a glyph-coverage check that has never seen an unpatched font proves nothing. |
+| **State-invariant test** | Asserts a relationship **between two things** neither one alone can prove: `PKGBUILD` against the generated metadata file; the family name baked into the TTF against what `fc-list` reports against what a user writes in their terminal config; the patched output against the upstream input it came from. Each side can be individually valid while the pair is wrong. |
+| **Test pollution / isolation leak** | State that outlives a run and changes the next one. The sharp one here is the **fontconfig cache**: an older installed version can keep rendering after a bad rebuild, so the icons look fine and the package is broken — always `fc-cache -f` and re-check, and prefer verifying on a machine that never had a previous build installed. Building outside a chroot is the same class of problem. |
+
+### Rules that came out of real bugs, not theory
+
+- **Prove every check can fail before you trust it green.** Patch a font with `--complete` removed,
+  confirm your coverage check reports the missing ranges, restore. An unexercised check is decoration.
+- **Never assert on a count you cannot predict.** This is the specific trap for this package: the
+  number of Private Use Area codepoints in a patched font tracks the **Nerd Fonts release**, not your
+  build — so `ttx -t cmap … | grep -c 'code=0xe'` will happily report a healthy-looking number for a
+  half-patched font, and will "fail" a perfectly good one after an upstream glyph-set change. Assert
+  **named codepoints you actually use** instead: `U+E0B0` (Powerline arrow), `U+F09B` (git branch),
+  and whichever glyphs your prompt and editor really draw. Same for file size and glyph totals.
+- **A checksum, generated metadata file or `pkgrel` must die with the source it describes.** VCS
+  sources legitimately use `SKIP`, so the *only* thing tying a build to its input is what you record
+  about it — stale metadata beside a rebuilt font produces a package that installs happily and is
+  wrong, with nothing failing.
+- **Never test destructively on your own machine.** Chroot to build, container or VM to install. If
+  you do install locally, know `pacman -Rns` and `fc-cache -f` before you start.
+- **Run the build the way that actually works here.** Patching fans out with `xargs -P $(nproc)` and
+  FontForge is memory-hungry, so on a many-core box cap the fan-out (or run it under a memory ceiling)
+  rather than discovering the limit by taking the machine down. And **claim exactly what you
+  verified**: "`makepkg` succeeded" is not "the icons render".
+
 ## Working rules
 
 - **Use superpowers skills whenever they apply** — invoke via `Skill` before acting; process skills before implementation skills.
