@@ -158,6 +158,7 @@ What "real system" means here, concretely:
 - **Don't add packages / build deps without asking** — the toolchain (`font-patcher`, FontForge) is intentional; adding `makedepends` or `depends` changes what users must install.
 - **Never hand-edit generated files** — `pkgver` (set by `pkgver()`) and `.SRCINFO` (produced by `makepkg --printsrcinfo`) are derived; regenerate, don't type.
 - **Regenerate `.SRCINFO` with every `PKGBUILD` change** and commit them together.
+- **Reuse before you write** — this recipe has a sibling (`ttf-atkinson-hyperlegible-mono-nerd`): when the patch flags, the `pkgver()` derivation or the install layout change here, check the other and keep both in the same shape instead of growing a second style. Dependency names come from the official repos, the `font-patcher` invocation is the single place the flags live, and no value that `pkgver()`, `updpkgsums` or `makepkg --printsrcinfo` already derives gets re-typed by hand.
 - **Don't change patch flags casually** — `--complete --careful --makegroups --metrics` affect which glyphs land and the resulting font metrics; a change here can silently drop icons or shift line height. Rebuild and re-verify glyphs afterward.
 - **Verify by building** — this repo has no tests; the acceptance check is an actual `makepkg -si` plus a glyph/render check (see "Quality" above).
 
