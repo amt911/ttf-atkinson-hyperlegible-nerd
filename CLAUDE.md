@@ -262,7 +262,10 @@ measured number.
 ## Working rules
 
 - **Use superpowers skills whenever they apply** — invoke via `Skill` before acting; process skills before implementation skills.
-- **Don't add packages / build deps without asking** — the toolchain (`font-patcher`, FontForge) is intentional; adding `makedepends` or `depends` changes what users must install.
+- **New packages / build deps: ask first, then add** — adding one is allowed when the package
+  genuinely needs it, but ask before adding it (which package, why) and wait for the go-ahead:
+  `makedepends`/`depends` change what users must install. The toolchain (`font-patcher`, FontForge)
+  is intentional.
 - **Never hand-edit generated files** — `pkgver` (set by `pkgver()`) and `.SRCINFO` (produced by `makepkg --printsrcinfo`) are derived; regenerate, don't type.
 - **Regenerate `.SRCINFO` with every `PKGBUILD` change** and commit them together.
 - **Reuse before you write** — this recipe has a sibling (`ttf-atkinson-hyperlegible-mono-nerd`): when the patch flags, the `pkgver()` derivation or the install layout change here, check the other and keep both in the same shape instead of growing a second style. Dependency names come from the official repos, the `font-patcher` invocation is the single place the flags live, and no value that `pkgver()`, `updpkgsums` or `makepkg --printsrcinfo` already derives gets re-typed by hand.
