@@ -1,4 +1,4 @@
-# ttf-atkinson-hyperlegible-nerd — Claude Guide
+# ttf-atkinson-hyperlegible-nerd — Agent Guide
 
 Arch Linux packaging (a `PKGBUILD`) that builds a **Nerd Fonts**-patched build of the
 **Atkinson Hyperlegible Next** font. `makepkg` clones the upstream Google Fonts source,
@@ -7,6 +7,33 @@ icon glyphs, and installs the patched TTFs into `/usr/share/fonts/TTF`.
 
 This is a tiny repo: essentially one `PKGBUILD` plus a generated `.SRCINFO`. There is no
 application code, no test suite, and no build system beyond `makepkg`.
+
+## Agent compatibility — Codex and Claude Code
+
+This file is `AGENTS.md`: the **one** instruction file for every coding agent in this repo. Codex reads
+it directly; Claude Code reads `CLAUDE.md`, which only imports this file (`@AGENTS.md`) and holds what
+applies to Claude alone. **Edit rules here, never in `CLAUDE.md`** — two copies of a rule drift apart
+on the first edit, and each agent then obeys a different one.
+
+| Concern | Claude Code | Codex |
+| --- | --- | --- |
+| Instruction file | `CLAUDE.md` → imports `AGENTS.md` | `AGENTS.md` (root down to the working directory) |
+| Invoke a skill | `Skill` tool, or `/<skill>` | mention it (`$<skill>`), or let it trigger from its description |
+| Skills on disk | `~/.claude/skills` (links into `~/.agents/skills`) | `.agents/skills`, then `~/.agents/skills` |
+| superpowers | `superpowers@claude-plugins-official` (`/plugin install`) | `superpowers@openai-curated` (install from `/plugins`; that id is its key in `~/.codex/config.toml`) |
+| MCP servers | `claude mcp add -s user <name> -- <cmd>` | `codex mcp add <name> -- <cmd>` (`~/.codex/config.toml`) |
+| File size | imports load whole | `project_doc_max_bytes`, **32 KiB by default** — raise it when this file is bigger, or the tail is silently dropped |
+
+- **Install shared skills once, for both agents:** `npx skills add <owner/repo> -g --skill <name>`
+  writes to `~/.agents/skills` and links it for Claude Code, so both run the same version.
+- **Names in this file are capabilities, not one agent's syntax.** "Invoke the `X` skill" means the
+  `Skill` tool in Claude Code and a skill mention in Codex. An MCP server named here is used when it is
+  registered for the agent you are running in; its absence never blocks ordinary work.
+- **Modes, model caps and Git rules bind both agents.** "lite mode", "normal mode" and "modo
+  desatendido" mean the same in Codex; a cap written as "no model above Sonnet" means "no model above
+  the mid tier" there.
+- **Claude-only commands** (`/graphify` and other slash commands that are not skills) are skipped by
+  Codex unless the same capability is installed as a skill in `~/.agents/skills`.
 
 ## ⚡ superpowers — use whenever applicable
 
@@ -272,6 +299,10 @@ measured number.
 - **Don't change patch flags casually** — `--complete --careful --makegroups --metrics` affect which glyphs land and the resulting font metrics; a change here can silently drop icons or shift line height. Rebuild and re-verify glyphs afterward.
 - **Verify by building** — this repo has no tests; the acceptance check is an actual `makepkg -si` plus a glyph/render check (see "Quality" above).
 - **Instrument before you ablate, budget the lap, and dispatch review in parallel** — a pipeline that completes with non-empty output produced output; more than three reproductions means you owe a shortcut script; a review finding is not a reproduction; and the review of task N runs alongside the implementation of N+1. See **Debugging** and **Agent orchestration** above.
+- **SOLID and the UI/UX workflow do not apply here, and that is why it is written down.** This repo has
+  no application code of its own — a `PKGBUILD` invoking `font-patcher` on upstream TTFs — and no UI to
+  design or review. If a script with its own logic (beyond the `pkgver()` one-liner) ever lands here,
+  revisit this exemption.
 
 ## Git & GitHub
 
